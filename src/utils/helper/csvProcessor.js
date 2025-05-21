@@ -1,6 +1,6 @@
 import fs from 'fs';
 import { createReadStream } from 'fs';
-import { parse } from 'csv-parser';
+import csvParser from 'csv-parser';
 import logger from '../log/logger.js';
 
 /**
@@ -13,7 +13,7 @@ export const processCSV = async (filePath) => {
     const results = [];
     
     createReadStream(filePath)
-      .pipe(parse())
+      .pipe(csvParser())
       .on('data', (data) => results.push(data))
       .on('end', () => {
         // Delete the temporary file

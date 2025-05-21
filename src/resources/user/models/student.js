@@ -11,7 +11,6 @@ const studentSchema = new mongoose.Schema(
     },
     serialNumber: {
       type: String,
-      required: true,
       unique: true
     },
     fullName: {

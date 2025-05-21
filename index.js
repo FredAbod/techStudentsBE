@@ -1,8 +1,8 @@
 import app from "./app.js";
 import dotenv from "dotenv";
-import logger from "./utils/log/logger.js";
-import connectDB from "./database/db.js"
-import { sendServerFailure } from "./utils/email/email-sender.js";
+import logger from "./src/utils/log/logger.js";
+import connectDB from "./src/database/db.js"
+// import { sendServerFailure } from "./utils/email/email-sender.js";
 
 
 const port = process.env.PORT || 4000;

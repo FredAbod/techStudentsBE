@@ -14,7 +14,7 @@ import profileRoutes from "./src/routes/profile.routes.js";
 import studentRoutes from "./src/routes/student.routes.js";
 import attendanceRoutes from "./src/routes/attendance.routes.js";
 import assignmentRoutes from "./src/routes/assignment.routes.js";
-import setupSwagger from './src/utils/swagger/swagger.js';
+import { setupSwagger } from './src/utils/swagger/swagger.js';
 
 const app = express();
 
@@ -57,6 +57,9 @@ app.use("/api/v1/students", studentRoutes);
 app.use("/api/v1/attendance", attendanceRoutes);
 app.use("/api/v1/assignments", assignmentRoutes);
 
+// Setup Swagger for API documentation
+setupSwagger(app);
+
 // Handle 404 errors
 app.use((req, res) => {
   res.status(404).json({
@@ -76,9 +79,6 @@ app.use((err, req, res, next) => {
     stack: process.env.NODE_ENV === "development" ? err.stack : undefined
   });
 });
-
-// Setup Swagger for API documentation
-setupSwagger(app);
 
 app.listen(8080, () => {
   console.log("Server listening on port 8080");

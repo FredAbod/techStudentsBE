@@ -13,6 +13,94 @@ import { validationResult } from 'express-validator';
 
 const router = express.Router();
 
+/**
+ * @swagger
+ * tags:
+ *   name: Assignments
+ *   description: Assignment management
+ */
+
+/**
+ * @swagger
+ * /assignments:
+ *   post:
+ *     summary: Submit new assignment (file upload)
+ *     tags: [Assignments]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               assignment:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       201:
+ *         description: Assignment submitted
+ *   get:
+ *     summary: Get all assignments (filter by student)
+ *     tags: [Assignments]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of assignments
+ */
+
+/**
+ * @swagger
+ * /assignments/{id}:
+ *   get:
+ *     summary: Get specific assignment
+ *     tags: [Assignments]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Assignment ID
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Assignment data
+ *   patch:
+ *     summary: Update assignment (for grading)
+ *     tags: [Assignments]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Assignment ID
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               score:
+ *                 type: number
+ *               feedback:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Assignment updated
+ */
+
 // Validation middleware
 const validate = (req, res, next) => {
   const errors = validationResult(req);
