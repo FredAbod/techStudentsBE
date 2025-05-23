@@ -99,7 +99,7 @@ const router = express.Router();
  */
 
 // Attendance routes
-router.post('/', isAuthenticated, roleBasedAccess(['tutor']), markAttendance);
+router.post('/', isAuthenticated, roleBasedAccess(['student']), markAttendance);
 router.get('/', isAuthenticated, getAttendanceRecords);
 router.delete('/:id', isAuthenticated, roleBasedAccess(['tutor']), deleteAttendanceRecord);
 

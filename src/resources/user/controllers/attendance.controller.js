@@ -5,54 +5,52 @@ import logger from '../../../utils/log/logger.js';
 
 export const markAttendance = async (req, res) => {
   try {
-    const { studentId, date, present, notes } = req.body;
-    
-    // Validate required fields
-    if (!studentId) {
-      return errorResMsg(res, 400, 'Student ID is required');
-    }
-    
-    // Verify student exists
-    const student = await Student.findById(studentId);
+    // Get the authenticated user's ID
+    const userId = req.user.userId || req.user.id || req.user._id;
+
+    // Find the student record for this user
+    const student = await Student.findOne({ userId });
     if (!student) {
-      return errorResMsg(res, 404, 'Student not found');
+      return errorResMsg(res, 404, 'Student record not found');
     }
-    
+
+    const { date, present, notes } = req.body;
+
     // Format date or use current date
     const attendanceDate = date ? new Date(date) : new Date();
-    
+
     // Check if attendance record for this date already exists
     const existingAttendance = await Attendance.findOne({
-      studentId,
+      studentId: student._id,
       date: {
         $gte: new Date(attendanceDate.setHours(0, 0, 0, 0)),
         $lt: new Date(attendanceDate.setHours(23, 59, 59, 999))
       }
     });
-    
+
     if (existingAttendance) {
       // Update existing record
       existingAttendance.present = present !== undefined ? present : existingAttendance.present;
       existingAttendance.notes = notes || existingAttendance.notes;
-      existingAttendance.markedBy = req.user.userId;
-      
+      existingAttendance.markedBy = userId;
+
       await existingAttendance.save();
-      
+
       return successResMsg(res, 200, {
         message: 'Attendance record updated',
         attendance: existingAttendance
       });
     }
-    
+
     // Create new attendance record
     const newAttendance = await Attendance.create({
-      studentId,
+      studentId: student._id,
       date: attendanceDate,
       present: present !== undefined ? present : true,
       notes,
-      markedBy: req.user.userId
+      markedBy: userId
     });
-    
+
     return successResMsg(res, 201, {
       message: 'Attendance marked successfully',
       attendance: newAttendance
