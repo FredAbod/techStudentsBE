@@ -2,7 +2,7 @@ import express from 'express';
 import { uploadAvatar } from '../utils/image/multer.js';
 import { uploadToCloudinary } from '../utils/helper/cloudinaryUploader.js';
 import { successResMsg, errorResMsg } from '../utils/lib/response.js';
-import { isAuthenticated } from '../middleware/authMiddleware.js';
+import { isAuthenticated } from '../middleware/isAuthenticated.js';
 
 const router = express.Router();
 
