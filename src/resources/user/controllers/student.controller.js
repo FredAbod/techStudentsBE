@@ -240,3 +240,29 @@ export const importStudents = async (req, res) => {
     return errorResMsg(res, 500, 'Error importing students');
   }
 };
+
+export const updateStudentProfile = async (req, res) => {
+  try {
+    const student = await Student.findOne({ userId: req.user.userId });
+    if (!student) return errorResMsg(res, 404, 'Student not found');
+
+    const { whatsapp, telegram, github, profilePicture } = req.body;
+    const updateData = {};
+    if (whatsapp !== undefined) updateData.whatsapp = whatsapp;
+    if (telegram !== undefined) updateData.telegram = telegram;
+    if (github !== undefined) updateData.github = github;
+    if (profilePicture !== undefined) updateData.profilePicture = profilePicture;
+
+    // Update Student
+    const updatedStudent = await Student.findByIdAndUpdate(student._id, updateData, { new: true });
+    // Also update Profile if fields exist
+    await Profile.findOneAndUpdate(
+      { userId: req.user.userId },
+      updateData
+    );
+    return successResMsg(res, 200, { message: 'Profile updated', student: updatedStudent });
+  } catch (error) {
+    logger.error(`Update student profile error: ${error.message}`);
+    return errorResMsg(res, 500, 'Error updating student profile');
+  }
+};

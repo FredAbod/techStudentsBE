@@ -14,6 +14,8 @@ import profileRoutes from "./src/routes/profile.routes.js";
 import studentRoutes from "./src/routes/student.routes.js";
 import attendanceRoutes from "./src/routes/attendance.routes.js";
 import assignmentRoutes from "./src/routes/assignment.routes.js";
+import groupRoutes from "./src/routes/group.routes.js";
+import uploadRoutes from "./src/routes/upload.routes.js";
 import { setupSwagger } from './src/utils/swagger/swagger.js';
 
 const app = express();
@@ -56,6 +58,8 @@ app.use("/api/v1/profiles", profileRoutes);
 app.use("/api/v1/students", studentRoutes);
 app.use("/api/v1/attendance", attendanceRoutes);
 app.use("/api/v1/assignments", assignmentRoutes);
+app.use("/api/v1/groups", groupRoutes);
+app.use("/api/v1/uploads", uploadRoutes);
 
 // Setup Swagger for API documentation
 setupSwagger(app);

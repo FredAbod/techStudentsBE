@@ -45,7 +45,11 @@ const studentSchema = new mongoose.Schema(
     updatedAt: {
       type: Date,
       default: Date.now
-    }
+    },
+    whatsapp: { type: String, default: null },
+    telegram: { type: String, default: null },
+    github: { type: String, default: null },
+    profilePicture: { type: String, default: null }
   }
 );
 

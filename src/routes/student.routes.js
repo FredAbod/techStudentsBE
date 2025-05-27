@@ -4,7 +4,8 @@ import {
   getStudentById, 
   getCurrentStudent, 
   updateStudent, 
-  importStudents 
+  importStudents,
+  updateStudentProfile 
 } from '../resources/user/controllers/student.controller.js';
 import isAuthenticated from '../middleware/isAuthenticated.js';
 import roleBasedAccess from '../middleware/rbac.js';
@@ -122,11 +123,41 @@ const validate = (req, res, next) => {
  *         description: Student updated
  */
 
+/**
+ * @swagger
+ * /students/profile:
+ *   put:
+ *     summary: Update student profile fields (WhatsApp, Telegram, GitHub, profile picture)
+ *     tags: [Students]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               whatsapp:
+ *                 type: string
+ *               telegram:
+ *                 type: string
+ *               github:
+ *                 type: string
+ *               profilePicture:
+ *                 type: string
+ *                 description: Cloudinary URL
+ *     responses:
+ *       200:
+ *         description: Profile updated
+ */
+
 // Student routes
 router.get('/', isAuthenticated, roleBasedAccess(['tutor']), getAllStudents);
 router.get('/me', isAuthenticated, roleBasedAccess(['student']), getCurrentStudent);
 router.get('/:id', isAuthenticated, getStudentById);
 router.patch('/:id', isAuthenticated, studentUpdateValidation, validate, updateStudent);
 router.post('/import', isAuthenticated, roleBasedAccess(['tutor']), handleCSVUpload, importStudents);
+router.put('/profile', isAuthenticated, updateStudentProfile);
 
 export default router;
