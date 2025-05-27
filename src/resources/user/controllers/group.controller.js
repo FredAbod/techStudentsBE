@@ -4,10 +4,9 @@ import { successResMsg, errorResMsg } from '../../../utils/lib/response.js';
 
 export const getMyGroup = async (req, res) => {
   try {
-    // Find student record for current user
     const student = await Student.findOne({ userId: req.user.userId });
     if (!student) return errorResMsg(res, 404, 'Student record not found');
-    // Find group containing this student
+
     const group = await Group.findOne({ members: student._id }).populate({
       path: 'members',
       model: 'Student',
@@ -16,8 +15,29 @@ export const getMyGroup = async (req, res) => {
         model: 'User'
       }
     });
+
     if (!group) return errorResMsg(res, 404, 'Group not found');
-    return successResMsg(res, 200, { group });
+
+    // Map members to expected response format
+    const members = group.members.map(member => ({
+      id: member._id,
+      userId: member.userId?._id,
+      name: member.fullName,
+      email: member.email,
+      whatsappNumber: member.whatsapp || null,
+      telegramUsername: member.telegram || null,
+      githubUrl: member.github || null,
+      profilePicture: member.profilePicture || null,
+      role: member.userId?.role || null
+    }));
+
+    return successResMsg(res, 200, {
+      group: {
+        id: group._id,
+        name: group.name,
+        members
+      }
+    });
   } catch (error) {
     return errorResMsg(res, 500, 'Error fetching group');
   }
