@@ -8,7 +8,14 @@ export const getMyGroup = async (req, res) => {
     const student = await Student.findOne({ userId: req.user.userId });
     if (!student) return errorResMsg(res, 404, 'Student record not found');
     // Find group containing this student
-    const group = await Group.findOne({ members: student._id }).populate('members');
+    const group = await Group.findOne({ members: student._id }).populate({
+      path: 'members',
+      model: 'Student',
+      populate: {
+        path: 'userId',
+        model: 'User'
+      }
+    });
     if (!group) return errorResMsg(res, 404, 'Group not found');
     return successResMsg(res, 200, { group });
   } catch (error) {
