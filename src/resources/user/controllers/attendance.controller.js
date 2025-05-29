@@ -16,15 +16,20 @@ export const markAttendance = async (req, res) => {
 
     const { date, present, notes } = req.body;
 
-    // Format date or use current date
-    const attendanceDate = date ? new Date(date) : new Date();
+    // Format date or use current date (always use a new Date instance for $gte/$lt)
+    let attendanceDate = date ? new Date(date) : new Date();
+    // Always use the original value for $gte and $lt
+    const startOfDay = new Date(attendanceDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(attendanceDate);
+    endOfDay.setHours(23, 59, 59, 999);
 
     // Check if attendance record for this date already exists
     const existingAttendance = await Attendance.findOne({
       studentId: student._id,
       date: {
-        $gte: new Date(attendanceDate.setHours(0, 0, 0, 0)),
-        $lt: new Date(attendanceDate.setHours(23, 59, 59, 999))
+        $gte: startOfDay,
+        $lt: endOfDay
       }
     });
 
