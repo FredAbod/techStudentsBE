@@ -17,6 +17,10 @@ import assignmentRoutes from "./src/routes/assignment.routes.js";
 import groupRoutes from "./src/routes/group.routes.js";
 import uploadRoutes from "./src/routes/upload.routes.js";
 import { setupSwagger } from './src/utils/swagger/swagger.js';
+import adminAuthRoutes from './src/routes/admin.auth.routes.js';
+import adminStudentRoutes from './src/routes/admin.student.routes.js';
+import adminAssignmentRoutes from './src/routes/admin.assignment.routes.js';
+import adminDashboardRoutes from './src/routes/admin.dashboard.routes.js';
 
 const app = express();
 
@@ -60,6 +64,10 @@ app.use("/api/v1/attendance", attendanceRoutes);
 app.use("/api/v1/assignments", assignmentRoutes);
 app.use("/api/v1/groups", groupRoutes);
 app.use("/api/v1/uploads", uploadRoutes);
+app.use('/api/v1/auth/tutor', adminAuthRoutes);
+app.use('/api/v1/admin', adminStudentRoutes);
+app.use('/api/v1/admin', adminAssignmentRoutes);
+app.use('/api/v1/admin', adminDashboardRoutes);
 
 // Setup Swagger for API documentation
 setupSwagger(app);
