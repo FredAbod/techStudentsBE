@@ -1,6 +1,6 @@
 import express from 'express';
 import { 
-  submitAssignment, 
+  submitAndGradeAssignment, 
   getAssignments, 
   getAssignmentById, 
   updateAssignment 
@@ -111,7 +111,7 @@ const validate = (req, res, next) => {
 };
 
 // Assignment routes
-router.post('/', isAuthenticated, assignmentSubmitValidation, validate, handleAssignmentUpload, submitAssignment);
+router.post('/', isAuthenticated, handleAssignmentUpload, submitAndGradeAssignment);
 router.get('/', isAuthenticated, getAssignments);
 router.get('/:id', isAuthenticated, getAssignmentById);
 router.patch('/:id', isAuthenticated, roleBasedAccess(['tutor']), updateAssignment);

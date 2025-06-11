@@ -8,3 +8,4 @@ cloudinary.config({
 });
 
 export default cloudinary;
+export const cloudinaryV2 = cloudinary.v2;

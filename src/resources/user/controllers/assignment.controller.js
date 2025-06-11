@@ -2,6 +2,10 @@ import Assignment from '../models/assignment.js';
 import Student from '../models/student.js';
 import { successResMsg, errorResMsg } from '../../../utils/lib/response.js';
 import logger from '../../../utils/log/logger.js';
+import AdmZip from 'adm-zip';
+import fs from 'fs';
+import path from 'path';
+import * as unrar from 'node-unrar-js';
 
 export const submitAssignment = async (req, res) => {
   try {
@@ -204,3 +208,274 @@ export const updateAssignment = async (req, res) => {
     return errorResMsg(res, 500, 'Error updating assignment');
   }
 };
+
+export const submitAndGradeAssignment = async (req, res) => {
+  // Initialize student variable outside try/catch so it's accessible in the catch block
+  let student = null;
+  
+  try {
+    // Debug information at the start
+    logger.info(`[submitAndGradeAssignment] Starting with request: ${JSON.stringify({
+      user: req.user?.role,
+      file: req.file ? { 
+        filename: req.file.originalname,
+        path: req.file.path,
+        mimetype: req.file.mimetype,
+        size: req.file.size
+      } : null,
+      body: {
+        assignmentNumber: req.body.assignmentNumber,
+        fileUrl: req.body.fileUrl,
+        fileName: req.body.fileName
+      }
+    })}`);
+    
+    // Only students can submit
+    if (!req.user || req.user.role !== 'student') {
+      return errorResMsg(res, 403, 'Only students can submit assignments');
+    }
+    
+    // Find student record
+    student = await Student.findOne({ userId: req.user.userId });
+    if (!student) return errorResMsg(res, 404, 'Student record not found');
+
+    // Validate assignmentNumber
+    const { assignmentNumber } = req.body;
+    if (!assignmentNumber) return errorResMsg(res, 400, 'assignmentNumber is required');
+    if (!req.body.fileUrl || !req.body.fileName) {
+      return errorResMsg(res, 400, 'File upload required');
+    }
+
+    // Download file from Cloudinary to local tmp (if needed)
+    // For now, use req.file.path if available, else skip extraction
+    let localFilePath = req.file?.path;
+    logger.info(`[submitAndGradeAssignment] Using local file path: ${localFilePath}`);
+    let extractedDir = null;
+    let gradingResult = { score: 0, feedback: '', autoGraded: true };
+    let fileExt = path.extname(req.body.fileName).toLowerCase();
+
+    // --- Auto-Grading Logic ---
+    if (fileExt === '.zip') {
+      // Extract ZIP to a temp dir
+      extractedDir = path.join('src/tmp', `assignment-${student._id}-${Date.now()}`);
+      fs.mkdirSync(extractedDir, { recursive: true });
+      const zip = new AdmZip(localFilePath);
+      zip.extractAllTo(extractedDir, true);
+      gradingResult = await autoGradeNodeAssignment(extractedDir);
+      // Clean up extracted files
+      fs.rmSync(extractedDir, { recursive: true, force: true });    } else if (fileExt === '.rar') {
+      // Extract RAR to a temp dir
+      extractedDir = path.join('src/tmp', `assignment-${student._id}-${Date.now()}`);
+      fs.mkdirSync(extractedDir, { recursive: true });
+      
+      try {
+        // Read the RAR file as a Uint8Array
+        const data = fs.readFileSync(localFilePath);
+        const extractor = await unrar.createExtractorFromData({
+          data: new Uint8Array(data),
+          password: undefined
+        });
+        
+        // Get the extraction result
+        const extracted = extractor.extract();
+        
+        // Process the files
+        for (const file of extracted.files) {
+          if (!file.extraction || file.fileHeader.flags.directory) continue;
+          
+          // Create the file path
+          const outPath = path.join(extractedDir, file.fileHeader.name);
+          
+          // Ensure directory exists
+          fs.mkdirSync(path.dirname(outPath), { recursive: true });
+          
+          // Write the file
+          fs.writeFileSync(outPath, Buffer.from(file.extraction));
+        }
+        
+        gradingResult = await autoGradeNodeAssignment(extractedDir);
+      } catch (error) {
+        logger.error(`RAR extraction error: ${error.message}`);
+        gradingResult = {
+          score: 0,
+          feedback: `Error extracting RAR file: ${error.message}. Please submit a valid RAR file.`,
+          autoGraded: true
+        };
+      } finally {
+        fs.rmSync(extractedDir, { recursive: true, force: true });
+      }
+    } else if (fileExt === '.pdf') {
+      gradingResult = {
+        score: 5,
+        feedback: 'PDF detected. Please submit a ZIP for full auto-grading. Minimal points awarded.',
+        autoGraded: true
+      };
+    } else {
+      gradingResult = {
+        score: 0,
+        feedback: 'Unsupported file type for auto-grading.',
+        autoGraded: true
+      };
+    }    // Save assignment
+    // Generate a default title based on assignment number and file name when not provided
+    const defaultTitle = `Assignment ${assignmentNumber} - ${path.basename(req.body.fileName, path.extname(req.body.fileName))}`;
+    
+    const assignment = await Assignment.create({
+      studentId: student._id,
+      assignmentNumber,
+      title: defaultTitle, // Add default title to satisfy schema requirements
+      fileUrl: req.body.fileUrl,
+      fileName: req.body.fileName,
+      score: gradingResult.score,
+      feedback: gradingResult.feedback,
+      autoGraded: true,
+      submittedAt: new Date()
+    });
+
+    return successResMsg(res, 201, {
+      message: 'Assignment submitted and graded',
+      data: {
+        assignment: {
+          _id: assignment._id,
+          fileUrl: assignment.fileUrl,
+          fileName: assignment.fileName,
+          score: assignment.score,
+          feedback: assignment.feedback,
+          autoGraded: true
+        }
+      }
+    });  } catch (error) {
+    // Log detailed error information
+    logger.error(`Auto-grade assignment error: ${error.message}`);
+    logger.error(`Error stack: ${error.stack}`);
+    
+    // The variable extractedDir may not be defined in the catch block's scope
+    // so we'll use a safer cleanup approach
+    try {      // Look for any temporary directories created by this function
+      const tmpDir = 'src/tmp';
+      if (fs.existsSync(tmpDir)) {
+        const files = fs.readdirSync(tmpDir);
+        // Use a safer pattern that doesn't rely on student variable
+        const pattern = `assignment-${student?._id || 'unknown'}-`;
+        // Clean up any temp directories that match our pattern
+        files.forEach(file => {
+          if (file.startsWith(pattern)) {
+            const fullPath = path.join(tmpDir, file);
+            if (fs.statSync(fullPath).isDirectory()) {
+              fs.rmSync(fullPath, { recursive: true, force: true });
+              logger.info(`Cleaned up temporary directory: ${fullPath}`);
+            }
+          }
+        });
+      }
+    } catch (cleanupErr) {
+      logger.error(`Failed during cleanup: ${cleanupErr.message}`);
+    }
+    
+    // Return a more specific error message if possible
+    const errorMessage = error.code === 'ENOENT' ? 
+      'File not found or inaccessible' : 
+      'Error submitting and grading assignment';
+      
+    return errorResMsg(res, 500, errorMessage);
+  }
+};
+
+// --- Auto-grader utility ---
+async function autoGradeNodeAssignment(dir) {
+  // Grading config
+  let score = 0;
+  let feedback = [];
+  // 1. Project Structure (5)
+  const hasPackageJson = fs.existsSync(path.join(dir, 'package.json'));
+  const hasReadme = fs.existsSync(path.join(dir, 'README.md'));
+  const hasSrc = fs.existsSync(path.join(dir, 'src'));
+  const hasTests = fs.existsSync(path.join(dir, 'tests'));
+  const hasGitignore = fs.existsSync(path.join(dir, '.gitignore'));
+  let structurePoints = 0;
+  if (hasPackageJson) structurePoints += 2;
+  if (hasReadme) structurePoints += 1;
+  if (hasSrc) structurePoints += 1;
+  if (hasTests) structurePoints += 0.5;
+  if (hasGitignore) structurePoints += 0.5;
+  score += structurePoints;
+  feedback.push(`Project structure: ${structurePoints}/5`);
+
+  // 2. Code Quality (5)
+  let codeQualityPoints = 0;
+  // Check for JS files in src
+  if (hasSrc) {
+    const srcFiles = fs.readdirSync(path.join(dir, 'src')).filter(f => f.endsWith('.js'));
+    if (srcFiles.length > 0) codeQualityPoints += 2;
+    // Check for comments and basic formatting
+    // (Simple heuristic: look for // or /* in files)
+    let commentCount = 0;
+    for (const file of srcFiles) {
+      const content = fs.readFileSync(path.join(dir, 'src', file), 'utf8');
+      if (content.includes('//') || content.includes('/*')) commentCount++;
+    }
+    if (commentCount > 0) codeQualityPoints += 1;
+    // Syntax check: try to require each file (catch errors)
+    for (const file of srcFiles) {
+      try {
+        require(path.join(process.cwd(), dir, 'src', file));
+        codeQualityPoints += 1;
+        break;
+      } catch (e) {}
+    }
+    // Bonus for >1 file
+    if (srcFiles.length > 1) codeQualityPoints += 1;
+  }
+  score += codeQualityPoints;
+  feedback.push(`Code quality: ${codeQualityPoints}/5`);
+
+  // 3. Functionality (15)
+  let functionalityPoints = 0;
+  // Try to run npm install and npm test (if package.json exists)
+  if (hasPackageJson) {
+    try {
+      // Simulate: in real system, would spawn child process
+      // For now, just check for scripts.test
+      const pkg = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8'));
+      if (pkg.scripts && pkg.scripts.test) {
+        functionalityPoints += 5;
+      }
+      // Check for main entry
+      if (pkg.main && fs.existsSync(path.join(dir, pkg.main))) {
+        functionalityPoints += 2;
+      }
+      // Check dependencies
+      if (pkg.dependencies && Object.keys(pkg.dependencies).length > 0) {
+        functionalityPoints += 2;
+      }
+      // Bonus for using express
+      if (pkg.dependencies && pkg.dependencies.express) {
+        functionalityPoints += 1;
+      }
+    } catch (e) {}
+  }
+  // Bonus for tests folder
+  if (hasTests) functionalityPoints += 2;
+  score += functionalityPoints;
+  feedback.push(`Functionality: ${functionalityPoints}/15`);
+
+  // 4. Documentation (5)
+  let docPoints = 0;
+  if (hasReadme) {
+    const readmeContent = fs.readFileSync(path.join(dir, 'README.md'), 'utf8');
+    if (readmeContent.length > 100) docPoints += 2;
+    if (/install/i.test(readmeContent)) docPoints += 1;
+    if (/usage|run/i.test(readmeContent)) docPoints += 1;
+    if (/api/i.test(readmeContent)) docPoints += 1;
+  }
+  score += docPoints;
+  feedback.push(`Documentation: ${docPoints}/5`);
+
+  // Clamp score to 30
+  score = Math.round(Math.min(score, 30));
+  return {
+    score,
+    feedback: feedback.join(' | '),
+    autoGraded: true
+  };
+}

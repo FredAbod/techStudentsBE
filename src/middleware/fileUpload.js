@@ -4,32 +4,54 @@ import { errorResMsg } from '../utils/lib/response.js';
 import logger from '../utils/log/logger.js';
 
 /**
- * Middleware to handle assignment file uploads
+ * Middleware to handle assignment file uploads (accepts 'file' or 'assignment' field)
  */
 export const handleAssignmentUpload = (req, res, next) => {
-  uploadAssignment(req, res, async (err) => {
-    if (err) {
+  // Try 'file' field first
+  const singleFile = uploadSingle;
+  const singleAssignment = uploadAssignment;
+
+  singleFile(req, res, async (err) => {
+    if (err && err.message !== 'Unexpected field') {
       logger.error(`Assignment upload error: ${err.message}`);
       return errorResMsg(res, 400, err.message);
     }
-    
-    if (!req.file) {
-      return errorResMsg(res, 400, 'Please upload an assignment file');
+    // Debug log after singleFile
+    console.log('[handleAssignmentUpload] After singleFile:', { file: req.file, body: req.body });
+    if (req.file) {
+      try {
+        // Upload to Cloudinary as raw file
+        const result = await uploadToCloudinary(req.file.path, 'assignments', true);
+        req.body.fileUrl = result.url;
+        req.body.fileName = req.file.originalname;
+        return next();
+      } catch (error) {
+        logger.error(`Cloudinary upload error: ${error.message}`);
+        return errorResMsg(res, 500, 'Error uploading file to cloud storage');
+      }
     }
-    
-    try {
-      // Upload to Cloudinary
-      const result = await uploadToCloudinary(req.file.path, 'assignments');
-      
-      // Add file details to request body
-      req.body.fileUrl = result.url;
-      req.body.fileName = req.file.originalname;
-      
-      next();
-    } catch (error) {
-      logger.error(`Cloudinary upload error: ${error.message}`);
-      return errorResMsg(res, 500, 'Error uploading file to cloud storage');
-    }
+    // If not found, try 'assignment' field
+    singleAssignment(req, res, async (err2) => {
+      if (err2) {
+        logger.error(`Assignment upload error: ${err2.message}`);
+        return errorResMsg(res, 400, err2.message);
+      }
+      // Debug log after singleAssignment
+      console.log('[handleAssignmentUpload] After singleAssignment:', { file: req.file, body: req.body });
+      if (!req.file) {
+        return errorResMsg(res, 400, 'Please upload an assignment file');
+      }
+      try {
+        // Upload to Cloudinary as raw file
+        const result = await uploadToCloudinary(req.file.path, 'assignments', true);
+        req.body.fileUrl = result.url;
+        req.body.fileName = req.file.originalname;
+        next();
+      } catch (error) {
+        logger.error(`Cloudinary upload error: ${error.message}`);
+        return errorResMsg(res, 500, 'Error uploading file to cloud storage');
+      }
+    });
   });
 };
 
