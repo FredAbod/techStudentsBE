@@ -5,7 +5,14 @@ import {
   generateAllStudentsReport,
   getAttendanceDates,
   bulkUpdateAttendance,
-  importUsers
+  importUsers,
+  getAttendanceStats,
+  getClassAttendanceSummary,
+  getStudentAttendanceByDate,
+  getGroupAttendanceStats,
+  getGroupAttendanceDetail,
+  getStudentAttendanceComparison,
+  getAttendanceTrends
 } from '../resources/user/controllers/admin/dashboard.controller.js';
 import isAuthenticated from '../middleware/isAuthenticated.js';
 import roleBasedAccess from '../middleware/rbac.js';
@@ -149,5 +156,147 @@ router.post('/attendance/bulk-update', isAuthenticated, roleBasedAccess(['tutor'
  *         description: Users imported
  */
 router.post('/import/users', isAuthenticated, roleBasedAccess(['tutor']), handleCSVUpload, importUsers);
+
+/**
+ * @swagger
+ * /admin/attendance/stats:
+ *   get:
+ *     summary: Get comprehensive attendance statistics
+ *     tags: [AdminDashboard]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Attendance statistics
+ */
+router.get('/attendance/stats', isAuthenticated, roleBasedAccess(['tutor']), getAttendanceStats);
+
+/**
+ * @swagger
+ * /admin/attendance/classes:
+ *   get:
+ *     summary: Get attendance summary for all classes
+ *     tags: [AdminDashboard]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Results per page
+ *     responses:
+ *       200:
+ *         description: List of classes with attendance data
+ */
+router.get('/attendance/classes', isAuthenticated, roleBasedAccess(['tutor']), getClassAttendanceSummary);
+
+/**
+ * @swagger
+ * /admin/attendance/class/{date}:
+ *   get:
+ *     summary: Get attendance breakdown by students for a specific class date
+ *     tags: [AdminDashboard]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: date
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Class date in YYYY-MM-DD format
+ *     responses:
+ *       200:
+ *         description: Student attendance for the specified class
+ */
+router.get('/attendance/class/:date', isAuthenticated, roleBasedAccess(['tutor']), getStudentAttendanceByDate);
+
+/**
+ * @swagger
+ * /admin/attendance/groups:
+ *   get:
+ *     summary: Get attendance statistics for all student groups
+ *     tags: [AdminDashboard]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Group attendance statistics
+ */
+router.get('/attendance/groups', isAuthenticated, roleBasedAccess(['tutor']), getGroupAttendanceStats);
+
+/**
+ * @swagger
+ * /admin/attendance/group/{groupId}:
+ *   get:
+ *     summary: Get detailed attendance information for a specific group
+ *     tags: [AdminDashboard]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: groupId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the student group
+ *     responses:
+ *       200:
+ *         description: Detailed group attendance information
+ *       404:
+ *         description: Group not found
+ */
+router.get('/attendance/group/:groupId', isAuthenticated, roleBasedAccess(['tutor']), getGroupAttendanceDetail);
+
+/**
+ * @swagger
+ * /admin/attendance/compare:
+ *   post:
+ *     summary: Compare attendance patterns between selected students
+ *     tags: [AdminDashboard]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - studentIds
+ *             properties:
+ *               studentIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array of student IDs to compare (minimum 2)
+ *     responses:
+ *       200:
+ *         description: Student attendance comparison with pattern analysis
+ *       400:
+ *         description: Invalid input - at least two valid student IDs required
+ */
+router.post('/attendance/compare', isAuthenticated, roleBasedAccess(['tutor']), getStudentAttendanceComparison);
+
+/**
+ * @swagger
+ * /admin/attendance/trends:
+ *   get:
+ *     summary: Get attendance trends over time
+ *     tags: [AdminDashboard]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Attendance trends grouped by time periods (weekly or monthly)
+ */
+router.get('/attendance/trends', isAuthenticated, roleBasedAccess(['tutor']), getAttendanceTrends);
 
 export default router;
