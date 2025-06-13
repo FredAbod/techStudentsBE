@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Upload Challenge Tester</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .panel {
+            flex: 1;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+        }
+        h2 {
+            margin-top: 0;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .upload-list {
+            margin-top: 20px;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+        .upload-item {
+            border: 1px solid #eee;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .status {
+            padding: 3px 6px;
+            border-radius: 3px;
+            font-size: 0.8em;
+        }
+        .status-pending {
+            background-color: #FEF3C7;
+            color: #92400E;
+        }
+        .status-graded {
+            background-color: #D1FAE5;
+            color: #065F46;
+        }
+        .notification-area {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 300px;
+            z-index: 1000;
+        }
+        .notification {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            position: relative;
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(0); }
+        }
+        .close-notification {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            cursor: pointer;
+        }
+        #response-area {
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            padding: 10px;
+            height: 200px;
+            overflow: auto;
+            margin-top: 20px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 15px;
+        }
+        .tab {
+            padding: 10px 15px;
+            cursor: pointer;
+        }
+        .tab.active {
+            border-bottom: 2px solid #4CAF50;
+            font-weight: bold;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.8em;
+            margin-left: 5px;
+        }
+        .badge-success {
+            background-color: #D1FAE5;
+            color: #065F46;
+        }
+        .badge-pending {
+            background-color: #FEF3C7;
+            color: #92400E;
+        }
+        .badge-error {
+            background-color: #FEE2E2;
+            color: #991B1B;
+        }
+    </style>
+</head>
+<body>
+    <h1>File Upload Challenge Tester</h1>
+    
+    <div class="notification-area" id="notification-area"></div>
+    
+    <div class="tabs">
+        <div class="tab active" data-tab="student">Student View</div>
+        <div class="tab" data-tab="admin">Admin/Tutor View</div>
+    </div>
+    
+    <div class="tab-content active" id="student-tab">
+        <div class="container">
+            <div class="panel">
+                <h2>Challenge Details</h2>
+                <div class="form-group">
+                    <label for="challenge-id">Challenge ID</label>
+                    <input type="text" id="challenge-id" placeholder="e.g. file-upload-1">
+                </div>
+                <button id="get-challenge-btn">Get Challenge Details</button>
+                
+                <div id="challenge-details" style="margin-top: 15px; display: none;">
+                    <h3 id="challenge-title">Challenge Title</h3>
+                    <p id="challenge-description">Description will appear here</p>
+                    <p><strong>Max Score:</strong> <span id="challenge-max-score">0</span></p>
+                    <p><strong>Assignment Number:</strong> <span id="challenge-assignment">0</span></p>
+                </div>
+                
+                <div id="upload-form" style="margin-top: 15px; display: none;">
+                    <h3>Submit Solution</h3>
+                    <div class="form-group">
+                        <label for="file-upload">Select File</label>
+                        <input type="file" id="file-upload">
+                    </div>
+                    <div class="form-group">
+                        <label for="comments">Comments (Optional)</label>
+                        <textarea id="comments" rows="3" placeholder="Any comments about your submission"></textarea>
+                    </div>
+                    <button id="submit-file-btn">Upload Submission</button>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h2>Your Submissions <button id="refresh-submissions" style="float:right;font-size:0.8em;">Refresh</button></h2>
+                <div class="form-group">
+                    <label for="filter-assignment">Filter by Assignment</label>
+                    <select id="filter-assignment">
+                        <option value="">All Assignments</option>
+                        <option value="1">Assignment 1</option>
+                        <option value="2">Assignment 2</option>
+                        <option value="3">Assignment 3</option>
+                    </select>
+                </div>
+                <div id="submissions-list" class="upload-list">
+                    <p>No submissions found</p>
+                </div>
+            </div>
+        </div>
+        
+        <div id="submission-details-panel" style="display: none;">
+            <h2>Submission Details</h2>
+            <div id="submission-details" class="panel">
+                <!-- Details will be populated here -->
+            </div>
+        </div>
+    </div>
+    
+    <div class="tab-content" id="admin-tab">
+        <div class="container">
+            <div class="panel">
+                <h2>Assignment File Submissions</h2>
+                <div class="form-group">
+                    <label for="admin-assignment-number">Assignment Number</label>
+                    <input type="number" id="admin-assignment-number" min="1" value="1">
+                </div>
+                <div class="form-group">
+                    <label for="admin-status-filter">Status Filter</label>
+                    <select id="admin-status-filter">
+                        <option value="all">All Submissions</option>
+                        <option value="pending">Pending</option>
+                        <option value="graded">Graded</option>
+                    </select>
+                </div>
+                <button id="admin-get-submissions">Get Submissions</button>
+                
+                <div id="admin-submissions-list" class="upload-list">
+                    <p>No submissions found</p>
+                </div>
+            </div>
+            
+            <div class="panel" id="admin-grading-panel" style="display: none;">
+                <h2>Grade Submission</h2>
+                <div id="admin-submission-info">
+                    <!-- Submission info will appear here -->
+                </div>
+                <div class="form-group" style="margin-top: 15px;">
+                    <label for="admin-score">Score (0-100)</label>
+                    <input type="number" id="admin-score" min="0" max="100" value="80">
+                </div>
+                <div class="form-group">
+                    <label for="admin-feedback">Feedback</label>
+                    <textarea id="admin-feedback" rows="5" placeholder="Provide feedback for this submission"></textarea>
+                </div>
+                <button id="admin-submit-grade">Submit Grade</button>
+                <button id="admin-download-file" style="background-color: #2196F3; margin-left: 10px;">Download File</button>
+            </div>
+        </div>
+    </div>
+
+    <h3>API Response</h3>
+    <div id="response-area">No response yet</div>
+    
+    <script>
+        // Utility functions
+        function showNotification(message, type = 'success') {
+            const notificationArea = document.getElementById('notification-area');
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.style.backgroundColor = type === 'error' ? '#f44336' : '#4CAF50';
+            
+            notification.innerHTML = `
+                ${message}
+                <span class="close-notification">&times;</span>
+            `;
+            
+            notificationArea.appendChild(notification);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transition = 'opacity 0.5s';
+                setTimeout(() => notification.remove(), 500);
+            }, 5000);
+            
+            // Close button functionality
+            notification.querySelector('.close-notification').addEventListener('click', () => {
+                notification.remove();
+            });
+        }
+
+        function displayResponse(data) {
+            document.getElementById('response-area').textContent = 
+                typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleString();
+        }
+
+        function formatFileSize(sizeInBytes) {
+            if (sizeInBytes < 1024) {
+                return sizeInBytes + ' B';
+            } else if (sizeInBytes < 1024 * 1024) {
+                return (sizeInBytes / 1024).toFixed(2) + ' KB';
+            } else {
+                return (sizeInBytes / (1024 * 1024)).toFixed(2) + ' MB';
+            }
+        }
+
+        // Tab functionality
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Remove active class from all tabs and tab contents
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+                
+                // Add active class to clicked tab and corresponding content
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab + '-tab').classList.add('active');
+            });
+        });
+
+        // Authentication
+        const getToken = () => {
+            // In a real app, this would be securely stored
+            return localStorage.getItem('auth_token') || '';
+        };
+
+        const apiBaseUrl = '/api/v1';
+
+        // API request helper
+        async function apiRequest(endpoint, method = 'GET', data = null) {
+            const token = getToken();
+            const options = {
+                method,
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            };
+            
+            if (data && !(data instanceof FormData)) {
+                options.headers['Content-Type'] = 'application/json';
+                options.body = JSON.stringify(data);
+            } else if (data) {
+                options.body = data;
+            }
+            
+            try {
+                const response = await fetch(`${apiBaseUrl}${endpoint}`, options);
+                const responseData = await response.json();
+                displayResponse(responseData);
+                
+                if (!response.ok) {
+                    throw new Error(responseData.message || 'API request failed');
+                }
+                
+                return responseData;
+            } catch (error) {
+                displayResponse(error.message || 'API request failed');
+                throw error;
+            }
+        }
+
+        // Student functionality
+        document.getElementById('get-challenge-btn').addEventListener('click', async () => {
+            const challengeId = document.getElementById('challenge-id').value;
+            if (!challengeId) {
+                showNotification('Please enter a challenge ID', 'error');
+                return;
+            }
+            
+            try {
+                const response = await apiRequest(`/filechallenges/challenge/${challengeId}`);
+                if (response.status === 'success') {
+                    const challenge = response.data.challenge;
+                    
+                    document.getElementById('challenge-title').textContent = challenge.title;
+                    document.getElementById('challenge-description').textContent = challenge.description;
+                    document.getElementById('challenge-max-score').textContent = challenge.maxScore;
+                    document.getElementById('challenge-assignment').textContent = challenge.assignmentNumber;
+                    
+                    document.getElementById('challenge-details').style.display = 'block';
+                    document.getElementById('upload-form').style.display = 'block';
+                    
+                    if (response.data.hasSubmission) {
+                        const submission = response.data.submission;
+                        showNotification(`You already submitted "${submission.fileName}" on ${formatDate(submission.submittedAt)}`);
+                    }
+                }
+            } catch (error) {
+                showNotification('Error loading challenge: ' + error.message, 'error');
+            }
+        });
+        
+        document.getElementById('submit-file-btn').addEventListener('click', async () => {
+            const challengeId = document.getElementById('challenge-id').value;
+            const fileInput = document.getElementById('file-upload');
+            const comments = document.getElementById('comments').value;
+            
+            if (!challengeId) {
+                showNotification('Please enter a challenge ID', 'error');
+                return;
+            }
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                showNotification('Please select a file to upload', 'error');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            formData.append('comments', comments);
+            
+            try {
+                const response = await fetch(`${apiBaseUrl}/filechallenges/challenge/${challengeId}/submit`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: formData
+                });
+                
+                const responseData = await response.json();
+                displayResponse(responseData);
+                
+                if (response.ok) {
+                    showNotification('File uploaded successfully!');
+                    loadStudentSubmissions();
+                } else {
+                    throw new Error(responseData.message || 'Upload failed');
+                }
+            } catch (error) {
+                showNotification('Error uploading file: ' + error.message, 'error');
+            }
+        });
+        
+        async function loadStudentSubmissions() {
+            try {
+                const assignmentFilter = document.getElementById('filter-assignment').value;
+                let endpoint = '/filechallenges/submissions';
+                if (assignmentFilter) {
+                    endpoint += `?assignmentNumber=${assignmentFilter}`;
+                }
+                
+                const response = await apiRequest(endpoint);
+                if (response.status === 'success') {
+                    const submissions = response.data.submissions;
+                    const listElement = document.getElementById('submissions-list');
+                    
+                    if (submissions.length === 0) {
+                        listElement.innerHTML = '<p>No submissions found</p>';
+                        return;
+                    }
+                    
+                    listElement.innerHTML = '';
+                    submissions.forEach(submission => {
+                        const submissionEl = document.createElement('div');
+                        submissionEl.className = 'upload-item';
+                        submissionEl.innerHTML = `
+                            <h4>${submission.challengeDetails.title || 'Unknown Challenge'}</h4>
+                            <p><strong>File:</strong> ${submission.fileName}</p>
+                            <p><strong>Submitted:</strong> ${formatDate(submission.submittedAt)}</p>
+                            <p>
+                                <strong>Status:</strong> 
+                                <span class="status ${submission.status === 'graded' ? 'status-graded' : 'status-pending'}">
+                                    ${submission.status === 'graded' ? 'Graded' : 'Pending'}
+                                </span>
+                                ${submission.score !== null ? `<strong>Score:</strong> ${submission.score}` : ''}
+                            </p>
+                            <button class="view-submission" data-id="${submission.id}">View Details</button>
+                            <button class="download-submission" data-id="${submission.id}">Download File</button>
+                        `;
+                        listElement.appendChild(submissionEl);
+                    });
+                    
+                    // Add event listeners to view buttons
+                    document.querySelectorAll('.view-submission').forEach(btn => {
+                        btn.addEventListener('click', () => viewSubmissionDetails(btn.dataset.id));
+                    });
+                    
+                    // Add event listeners to download buttons
+                    document.querySelectorAll('.download-submission').forEach(btn => {
+                        btn.addEventListener('click', () => downloadSubmission(btn.dataset.id));
+                    });
+                }
+            } catch (error) {
+                showNotification('Error loading submissions: ' + error.message, 'error');
+            }
+        }
+        
+        async function viewSubmissionDetails(submissionId) {
+            try {
+                const response = await apiRequest(`/filechallenges/submission/${submissionId}`);
+                if (response.status === 'success') {
+                    const submission = response.data.submission;
+                    const detailsPanel = document.getElementById('submission-details');
+                    
+                    detailsPanel.innerHTML = `
+                        <h3>${submission.challengeDetails?.title || 'Submission Details'}</h3>
+                        <p><strong>File Name:</strong> ${submission.fileName}</p>
+                        <p><strong>File Type:</strong> ${submission.fileType}</p>
+                        <p><strong>File Size:</strong> ${formatFileSize(submission.fileSize)}</p>
+                        <p><strong>Submitted:</strong> ${formatDate(submission.submittedAt)}</p>
+                        <p><strong>Status:</strong> 
+                            <span class="status ${submission.status === 'graded' ? 'status-graded' : 'status-pending'}">
+                                ${submission.status === 'graded' ? 'Graded' : 'Pending'}
+                            </span>
+                        </p>
+                        ${submission.score !== null ? `<p><strong>Score:</strong> ${submission.score}</p>` : ''}
+                        ${submission.gradedAt ? `<p><strong>Graded At:</strong> ${formatDate(submission.gradedAt)}</p>` : ''}
+                        ${submission.feedback ? `
+                            <div style="margin-top: 15px;">
+                                <h4>Feedback</h4>
+                                <div style="background-color: #f9f9f9; padding: 10px; border-left: 3px solid #4CAF50;">
+                                    ${submission.feedback}
+                                </div>
+                            </div>
+                        ` : ''}
+                    `;
+                    
+                    document.getElementById('submission-details-panel').style.display = 'block';
+                }
+            } catch (error) {
+                showNotification('Error loading submission details: ' + error.message, 'error');
+            }
+        }
+        
+        function downloadSubmission(submissionId) {
+            const token = getToken();
+            window.open(`${apiBaseUrl}/filechallenges/submission/${submissionId}/download?token=${token}`);
+        }
+        
+        document.getElementById('refresh-submissions').addEventListener('click', () => {
+            loadStudentSubmissions();
+        });
+        
+        document.getElementById('filter-assignment').addEventListener('change', () => {
+            loadStudentSubmissions();
+        });
+
+        // Admin functionality
+        document.getElementById('admin-get-submissions').addEventListener('click', async () => {
+            const assignmentNumber = document.getElementById('admin-assignment-number').value;
+            const statusFilter = document.getElementById('admin-status-filter').value;
+            
+            if (!assignmentNumber) {
+                showNotification('Please enter an assignment number', 'error');
+                return;
+            }
+            
+            try {
+                let endpoint = `/admin/file-uploads/submissions/${assignmentNumber}`;
+                if (statusFilter !== 'all') {
+                    endpoint += `?status=${statusFilter}`;
+                }
+                
+                const response = await apiRequest(endpoint);
+                if (response.status === 'success') {
+                    const submissions = response.data.submissions;
+                    const listElement = document.getElementById('admin-submissions-list');
+                    
+                    if (submissions.length === 0) {
+                        listElement.innerHTML = '<p>No submissions found</p>';
+                        return;
+                    }
+                    
+                    listElement.innerHTML = '';
+                    submissions.forEach(submission => {
+                        const submissionEl = document.createElement('div');
+                        submissionEl.className = 'upload-item';
+                        submissionEl.innerHTML = `
+                            <h4>${submission.challengeDetails.title || 'Unknown Challenge'}</h4>
+                            <p><strong>Student:</strong> ${submission.student.fullName}</p>
+                            <p><strong>File:</strong> ${submission.fileName}</p>
+                            <p><strong>Submitted:</strong> ${formatDate(submission.submittedAt)}</p>
+                            <p>
+                                <strong>Status:</strong> 
+                                <span class="status ${submission.isGraded ? 'status-graded' : 'status-pending'}">
+                                    ${submission.isGraded ? 'Graded' : 'Pending'}
+                                </span>
+                                ${submission.isGraded ? `<strong>Score:</strong> ${submission.score}` : ''}
+                            </p>
+                            <button class="admin-grade-submission" data-id="${submission.id}">
+                                ${submission.isGraded ? 'Edit Grade' : 'Grade Submission'}
+                            </button>
+                        `;
+                        listElement.appendChild(submissionEl);
+                    });
+                    
+                    // Add event listeners to grade buttons
+                    document.querySelectorAll('.admin-grade-submission').forEach(btn => {
+                        btn.addEventListener('click', () => loadSubmissionForGrading(btn.dataset.id));
+                    });
+                }
+            } catch (error) {
+                showNotification('Error loading submissions: ' + error.message, 'error');
+            }
+        });
+        
+        async function loadSubmissionForGrading(submissionId) {
+            try {
+                const response = await apiRequest(`/admin/file-uploads/submission/${submissionId}`);
+                if (response.status === 'success') {
+                    const submission = response.data.submission;
+                    
+                    // Store submission ID for grading
+                    document.getElementById('admin-grading-panel').dataset.submissionId = submission.id;
+                    
+                    // Display submission info
+                    const infoElement = document.getElementById('admin-submission-info');
+                    infoElement.innerHTML = `
+                        <h3>${submission.challenge.title}</h3>
+                        <p><strong>Student:</strong> ${submission.student.fullName}</p>
+                        <p><strong>File:</strong> ${submission.fileName}</p>
+                        <p><strong>Submitted:</strong> ${formatDate(submission.submittedAt)}</p>
+                        ${submission.comments ? `
+                            <div style="margin-top: 10px;">
+                                <strong>Student Comments:</strong>
+                                <div style="background-color: #f9f9f9; padding: 10px; font-style: italic;">
+                                    "${submission.comments}"
+                                </div>
+                            </div>
+                        ` : ''}
+                    `;
+                    
+                    // Pre-fill form if already graded
+                    if (submission.score !== null) {
+                        document.getElementById('admin-score').value = submission.score;
+                        document.getElementById('admin-feedback').value = submission.feedback || '';
+                    } else {
+                        document.getElementById('admin-score').value = 80;
+                        document.getElementById('admin-feedback').value = '';
+                    }
+                    
+                    // Show grading panel
+                    document.getElementById('admin-grading-panel').style.display = 'block';
+                    document.getElementById('admin-download-file').dataset.submissionId = submission.id;
+                }
+            } catch (error) {
+                showNotification('Error loading submission details: ' + error.message, 'error');
+            }
+        }
+        
+        document.getElementById('admin-submit-grade').addEventListener('click', async () => {
+            const submissionId = document.getElementById('admin-grading-panel').dataset.submissionId;
+            const score = document.getElementById('admin-score').value;
+            const feedback = document.getElementById('admin-feedback').value;
+            
+            if (!submissionId) {
+                showNotification('No submission selected', 'error');
+                return;
+            }
+            
+            if (score === '' || isNaN(score) || score < 0 || score > 100) {
+                showNotification('Please enter a valid score (0-100)', 'error');
+                return;
+            }
+            
+            try {
+                const response = await apiRequest(
+                    `/admin/file-uploads/submission/${submissionId}/grade`,
+                    'POST',
+                    { score: parseInt(score), feedback }
+                );
+                
+                if (response.status === 'success') {
+                    showNotification('Submission graded successfully!');
+                    document.getElementById('admin-get-submissions').click();
+                }
+            } catch (error) {
+                showNotification('Error grading submission: ' + error.message, 'error');
+            }
+        });
+        
+        document.getElementById('admin-download-file').addEventListener('click', () => {
+            const submissionId = document.getElementById('admin-download-file').dataset.submissionId;
+            if (submissionId) {
+                const token = getToken();
+                window.open(`${apiBaseUrl}/admin/file-uploads/submission/${submissionId}/download?token=${token}`);
+            }
+        });
+        
+        // Check if we are logged in
+        window.addEventListener('load', () => {
+            const token = getToken();
+            if (!token) {
+                showNotification('Please login to use this application', 'error');
+                document.querySelectorAll('button').forEach(btn => btn.disabled = true);
+            } else {
+                // Initialize student submissions
+                loadStudentSubmissions();
+            }
+        });
+        
+        // WebSocket connection for real-time updates
+        function setupWebSocket() {
+            const token = getToken();
+            if (!token) return;
+            
+            // In a real application, we would connect to WebSocket server here
+            console.log('WebSocket would be initialized with token:', token);
+            
+            // Simulate WebSocket notifications for demo purposes
+            setTimeout(() => {
+                showNotification('Connected to real-time updates');
+            }, 2000);
+        }
+        
+        setupWebSocket();
+    </script>
+</body>
+</html>

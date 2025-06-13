@@ -1,36 +1,177 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Customer Service Chat Box Example</title>
-  <!--Start of Tawk.to Script-->
-<script type="text/javascript">
-    var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
-    (function(){
-    var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
-    s1.async=true;
-    s1.src='https://embed.tawk.to/64825595cc26a871b02174a8/1h2ehskpa';
-    s1.charset='UTF-8';
-    s1.setAttribute('crossorigin','*');
-    s0.parentNode.insertBefore(s1,s0);
-    })();
-    </script>
-    <!--End of Tawk.to Script-->
-  <script type="text/javascript">
-    var Tawk_API = Tawk_API || {};
-    var Tawk_LoadStart = new Date();
-    (function() {
-      var s1 = document.createElement("script");
-      var s0 = document.getElementsByTagName("script")[0];
-      s1.async = true;
-      s1.src = 'https://embed.tawk.to/{fe1c220d5810977ebf2a069de87f121ac9072e99}/default';
-      s1.charset = 'UTF-8';
-      s1.setAttribute('crossorigin', '*');
-      s0.parentNode.insertBefore(s1, s0);
-    })();
-  </script>
+  <title>Educational Platform - Tech Students Backend</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    header {
+      background-color: #4CAF50;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      border-radius: 5px;
+      margin-bottom: 30px;
+    }
+    .tool-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      justify-content: center;
+    }
+    .tool-card {
+      border: 1px solid #eee;
+      border-radius: 5px;
+      padding: 20px;
+      width: 300px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .tool-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .tool-card h3 {
+      margin-top: 0;
+      color: #4CAF50;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 10px;
+    }
+    .tool-card p {
+      color: #666;
+    }
+    .button {
+      display: inline-block;
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 15px;
+      text-decoration: none;
+      border-radius: 4px;
+      margin-top: 10px;
+    }
+    .button:hover {
+      background-color: #45a049;
+    }
+    .tag {
+      display: inline-block;
+      background-color: #e9f5e9;
+      color: #4CAF50;
+      font-size: 12px;
+      padding: 3px 8px;
+      border-radius: 12px;
+      margin-right: 5px;
+    }
+  </style>
 </head>
 <body>
-  <!-- Your website content goes here -->
-  <h1>Welcome to my Savey Customer Support</h1>
-</body>
-</html>
+  <header>
+    <h1>Tech Students Backend</h1>
+    <p>Education Platform Testing Tools & Documentation</p>  </header>
+  
+  <div class="tool-container">
+    <div class="tool-card">
+      <h3>File Upload Challenge Testing</h3>
+      <span class="tag">Student</span>
+      <span class="tag">Admin</span>
+      <p>Test the file upload challenge system with admin grading functionality and student submission capabilities.</p>
+      <p>Features: File submissions, grading, WebSocket notifications, and download tracking.</p>
+      <a href="/file-upload-tester.html" class="button">Open Tester</a>
+    </div>
+    
+    <div class="tool-card">
+      <h3>File Upload Analytics</h3>
+      <span class="tag">Admin</span>
+      <p>Advanced analytics dashboard for monitoring file submission trends, grading insights, and student engagement metrics.</p>
+      <p>Features: Interactive charts, filtering by assignment, and detailed statistics.</p>
+      <a href="/file-upload-analytics.html" class="button">Open Dashboard</a>
+    </div>
+    
+    <div class="tool-card">
+      <h3>WebSocket Testing Tool</h3>
+      <span class="tag">Developer</span>
+      <p>Test real-time WebSocket connections for notifications, including submission updates and grading events.</p>
+      <p>Monitor channel activity and simulate notifications in the learning platform.</p>
+      <a href="/websocket-tester.html" class="button">Open WebSocket Tester</a>
+    </div>
+    
+    <div class="tool-card">
+      <h3>API Documentation</h3>
+      <span class="tag">Developer</span>
+      <p>Comprehensive API documentation for the enhanced assignment system, including all endpoints and request formats.</p>
+      <p>Covers student and admin routes for the file upload challenge system.</p>
+      <a href="/api-docs" class="button">View API Docs</a>
+    </div>
+  </div>
+    <h2 style="text-align: center; margin-top: 40px; margin-bottom: 20px;">System Information</h2>
+  
+  <div class="tool-container">
+    <div class="tool-card">
+      <h3>Server Status</h3>
+      <p>The backend server is currently <strong style="color: #4CAF50;">RUNNING</strong></p>
+      <p><strong>Version:</strong> 1.2.0</p>
+      <p><strong>WebSocket:</strong> <span id="ws-status">Checking...</span></p>
+      <p><strong>Database:</strong> <span id="db-status">Connected</span></p>
+    </div>
+    
+    <div class="tool-card">
+      <h3>Enhanced Assignment System</h3>
+      <p>Current implementation includes:</p>
+      <ul>
+        <li>File upload challenge management</li>
+        <li>Admin grading interface</li>
+        <li>Student file access tracking</li>
+        <li>WebSocket notifications</li>
+        <li>Analytics dashboard</li>
+      </ul>
+    </div>
+    
+    <div class="tool-card">
+      <h3>Environment</h3>
+      <p><strong>Node.js:</strong> <span id="node-version">v16.x</span></p>
+      <p><strong>Mode:</strong> <span id="node-env">Development</span></p>
+      <p><strong>Last Update:</strong> June 12, 2025</p>
+    </div>
+  </div>
+  
+  <footer style="text-align: center; margin-top: 50px; padding: 20px; border-top: 1px solid #eee; color: #666;">
+    <p>Tech Students Backend Platform © 2025</p>
+    <p>Built with Node.js, Express, MongoDB, and WebSockets</p>
+  </footer>
+  
+  <script>
+    // Check WebSocket connection status
+    document.addEventListener('DOMContentLoaded', function() {
+      try {
+        const socket = new WebSocket((window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host);
+        
+        socket.onopen = function() {
+          document.getElementById('ws-status').textContent = 'Connected';
+          document.getElementById('ws-status').style.color = '#4CAF50';
+        };
+        
+        socket.onerror = function() {
+          document.getElementById('ws-status').textContent = 'Disconnected';
+          document.getElementById('ws-status').style.color = '#f44336';
+        };
+        
+        // Check environment variables
+        fetch('/api/v1/system-info')
+          .then(response => response.json())
+          .then(data => {
+            if (data.status === 'success') {
+              document.getElementById('node-version').textContent = data.nodeVersion;
+              document.getElementById('node-env').textContent = data.environment;
+            }
+          })
+          .catch(err => console.error('Error fetching system info:', err));
+      } catch (error) {
+        console.error('WebSocket connection error:', error);
+        document.getElementById('ws-status').textContent = 'Not Available';
+        document.getElementById('ws-status').style.color = '#f44336';
+      }
+    });
+  </script>
